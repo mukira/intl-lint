@@ -13,7 +13,7 @@ To use this script, run it with Node.js from the command line, providing the pat
 
 Example Command:
 ----------------
-node intl-lint.js --silent
+node index.js --silent
 
 Script Behavior:
 ----------------
@@ -47,9 +47,26 @@ This script is open-source and distributed under the MIT license. Refer to the L
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const silentMode = process.argv.includes('--silent');
-const _projectPath = process.argv.includes('--path') ?? './app';
-const _translationFilePath = process.argv.includes('--translation-path') ?? './translations/en-us.yaml';
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
+
+const argv = yargs(hideBin(process.argv))
+    .option('silent', {
+        alias: 's',
+        type: 'boolean',
+        description: 'Run in silent mode',
+    })
+    .option('path', {
+        alias: 'p',
+        type: 'string',
+        description: 'Path to the Ember project',
+        default: './app',
+    })
+    .option('translation-path', {
+        type: 'string',
+        description: 'Path to the translation YAML file',
+        default: './translations/en-us.yaml',
+    }).argv;
 
 function findTranslationKeys(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
@@ -108,7 +125,7 @@ function checkKeysInTranslationFile(keys, translationFilePath) {
     return missingKeys;
 }
 
-function processDirectory(directoryPath, translationFilePath) {
+function processDirectory(directoryPath, translationFilePath, silentMode = false) {
     const files = fs.readdirSync(directoryPath);
 
     for (const file of files) {
@@ -116,7 +133,7 @@ function processDirectory(directoryPath, translationFilePath) {
 
         if (fs.statSync(filePath).isDirectory()) {
             // Recursively process subdirectories
-            processDirectory(filePath, translationFilePath);
+            processDirectory(filePath, translationFilePath, silentMode);
         } else if (file.endsWith('.js') || file.endsWith('.hbs')) {
             console.log(`Checking file: ${filePath}`);
             // Process JavaScript and Handlebars files
@@ -133,7 +150,7 @@ function processDirectory(directoryPath, translationFilePath) {
                     console.error(`🚫 Missing Translation: ${missingKey}`);
 
                     if (!silentMode) {
-                        throw new Error(`🚫 Missing Translation: ${missingKey}`);
+                        throw new Error(`Missing Tranlation: ${missingKey}`);
                     }
                 });
             } else {
@@ -144,18 +161,34 @@ function processDirectory(directoryPath, translationFilePath) {
     }
 }
 
-function checkTranslationsInProject(projectPath, translationFilePath) {
+function checkTranslationsInProject(projectPath, translationFilePath, silentMode = false) {
     console.log(`⏳ Starting translation key check in project: ${projectPath}`);
-    processDirectory(projectPath, translationFilePath);
+    try {
+        processDirectory(projectPath, translationFilePath, silentMode);
+    } catch (error) {
+        throw error;
+    }
+
     console.log('✅ Translation key check completed.');
 }
 
-const projectPath = path.join(__dirname, _projectPath);
-const translationFilePath = path.join(__dirname, _translationFilePath);
+function lint(options = {}) {
+    const silentMode = options.silent === true;
+    const projectPath = path.join(process.cwd(), options.path);
+    const translationFilePath = path.join(process.cwd(), options.translationPath);
 
-try {
-    checkTranslationsInProject(projectPath, translationFilePath);
-} catch (error) {
-    console.error('🚫 Translation key check failed:', error.message);
-    process.exit(1); // Exit with an error code
+    try {
+        checkTranslationsInProject(projectPath, translationFilePath, silentMode);
+    } catch (error) {
+        console.error('💣 Translation key check failed!');
+        process.exit(1);
+    }
 }
+
+lint({
+    silent: argv.silent,
+    path: argv.path,
+    translationPath: argv['translation-path'],
+});
+
+module.exports = lint;
