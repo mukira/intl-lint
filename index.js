@@ -30,8 +30,8 @@ Script Options:
 
 Authors:
 ---------
-- Fleetbase Pte Ltd <hello@fleetbase.io>
-- Ronald A. Richardson <ron@fleetbase.io>
+- Fleetbase Pte Ltd <hello@lipagas.io>
+- Ronald A. Richardson <ron@lipagas.io>
 
 Contact:
 ---------
