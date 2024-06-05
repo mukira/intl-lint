@@ -1,5 +1,5 @@
 {
-    "name": "@fleetbase/intl-lint",
+    "name": "@lipagas/intl-lint",
     "version": "0.0.1",
     "description": "Internationalization translation file linter script for Fleetbase Extensions and Application",
     "main": "index.js",
